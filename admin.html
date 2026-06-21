@@ -788,7 +788,7 @@ async function doLogin(){
 }
 function showLErr(m){var e=ID('lErr');e.textContent=m;e.style.display='block';}
 ID('lPw').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
-async function doLogout(){if(sb)await sb.auth.signOut();else showLogin();}
+async function doLogout(){detenerRealtimeCitas();if(sb)await sb.auth.signOut();else showLogin();}
 function showLogin(){ID('loginWrap').style.display='flex';ID('appWrap').style.display='none';}
 function showApp(user){
   ST.user=user;
@@ -831,7 +831,7 @@ async function loadAll(){
   renderDashboard();
   updateBadges();
   inicializarNotificaciones();
-  iniciarPolling();
+  iniciarRealtimeCitas();
 }
 
 function updateBadges(){
@@ -1497,9 +1497,22 @@ function viewCita(id){
     +'<div class="fg"><label class="fl">Modalidad</label><div style="font-size:.85rem;color:var(--t2)">'+esc(c.modalidad||'–')+'</div></div>'
     +'<div style="display:flex;gap:.6rem;padding-top:.3rem;flex-wrap:wrap">'
     +(telLimpio?'<a class="btnp" href="https://wa.me/'+telLimpio+'" target="_blank" style="text-decoration:none">💬 WhatsApp</a>':'')
+    +(c.lead_id?'<button class="btns" onclick="abrirLeadAsociado('+c.lead_id+')">👤 Ver lead asociado</button>':'')
     +(c.estado!=='cancelada'?'<button class="btnd" onclick="cancelarCita('+c.id+',\''+esc(c.nombre||'')+'\');closeM(\'detailModal\')">🗑️ Cancelar visita</button>':'')
     +'</div></div>';
   openM('detailModal');
+}
+
+async function abrirLeadAsociado(leadId){
+  closeM('detailModal');
+  if(!ST.leads.some(function(l){return l.id===leadId;})){
+    await lLeads();
+  }
+  if(!ST.leads.some(function(l){return l.id===leadId;})){
+    toast('warn','Lead no encontrado','El lead asociado pudo haber sido eliminado.');
+    return;
+  }
+  openLeadModal(leadId);
 }
 
 function cancelarCita(id,nombre){
@@ -1566,33 +1579,50 @@ async function marcarTodasLeidas(){
   if(ID('citasTbl'))renderCitasList();
 }
 
-/* ── Detección de citas nuevas (sin Supabase Realtime, por sondeo simple) ── */
+/* ── Notificaciones en tiempo real (Supabase Realtime) ──
+   Requiere que la tabla "citas" esté agregada a la publicación
+   supabase_realtime en Supabase (ver SQL). Sin eso, esta suscripción
+   simplemente nunca dispara — no rompe nada, pero la campana no se
+   actualiza sola hasta que se recargue la página. */
 function inicializarNotificaciones(){
-  ST.citasIdsConocidas=new Set(ST.citas.map(function(c){return c.id;}));
   renderNotifPanel();
 }
 
-function chequearNotificacionesNuevas(){
-  if(!ST.citasIdsConocidas){ST.citasIdsConocidas=new Set(ST.citas.map(function(c){return c.id;}));return;}
-  var nuevas=ST.citas.filter(function(c){return !ST.citasIdsConocidas.has(c.id);});
-  nuevas.forEach(function(c){
-    ST.citasIdsConocidas.add(c.id);
-    toast('ok','🔔 Nueva visita agendada',esc(c.nombre||'')+' — '+fmtDate(c.fecha)+' · '+esc(c.hora||''));
-  });
+var _realtimeCitasChannel=null;
+function iniciarRealtimeCitas(){
+  if(!sb||_realtimeCitasChannel)return;
+
+  _realtimeCitasChannel=sb.channel('citas-realtime')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'citas'},function(payload){
+      var nueva=payload.new;
+      if(!ST.citas.some(function(c){return c.id===nueva.id;}))ST.citas.push(nueva);
+      ST.citas.sort(function(a,b){return (a.fecha||'').localeCompare(b.fecha||'')||(a.hora||'').localeCompare(b.hora||'');});
+
+      updateBadges();
+      if(ST.notifOpen)renderNotifPanel();
+      var pgAgenda=ID('pg-agenda');
+      if(pgAgenda&&pgAgenda.classList.contains('on')){renderCal();if(ID('agendaList')&&ID('agendaList').style.display!=='none')renderCitasList();}
+
+      toast('ok','🔔 Nueva visita agendada','para '+esc(nueva.propiedad_titulo||'una propiedad')+' · '+esc(nueva.nombre||''));
+    })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'citas'},function(payload){
+      var act=payload.new;
+      var idx=ST.citas.findIndex(function(c){return c.id===act.id;});
+      if(idx>-1)ST.citas[idx]=act;else ST.citas.push(act);
+
+      updateBadges();
+      if(ST.notifOpen)renderNotifPanel();
+      var pgAgenda=ID('pg-agenda');
+      if(pgAgenda&&pgAgenda.classList.contains('on')){renderCal();if(ID('agendaList')&&ID('agendaList').style.display!=='none')renderCitasList();}
+    })
+    .subscribe(function(status){
+      if(status==='SUBSCRIBED')console.log('[Realtime] citas conectado');
+      else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('[Realtime] no se pudo conectar a citas — revisa que la tabla esté en la publicación supabase_realtime');
+    });
 }
 
-var _pollingCitasIniciado=false;
-function iniciarPolling(){
-  if(_pollingCitasIniciado)return;
-  _pollingCitasIniciado=true;
-  setInterval(async function(){
-    await lCitas();
-    chequearNotificacionesNuevas();
-    updateBadges();
-    if(ST.notifOpen)renderNotifPanel();
-    var pgAgenda=ID('pg-agenda');
-    if(pgAgenda&&pgAgenda.classList.contains('on')){renderCal();if(ID('agendaList').style.display!=='none')renderCitasList();}
-  },45000); /* cada 45s — sin necesitar Supabase Realtime configurado */
+function detenerRealtimeCitas(){
+  if(sb&&_realtimeCitasChannel){sb.removeChannel(_realtimeCitasChannel);_realtimeCitasChannel=null;}
 }
 
 // ══════════════════════════════════════════════════════
