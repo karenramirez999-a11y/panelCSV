@@ -1,7 +1,7 @@
 /* api/admin/cargar-propiedades.js → POST /api/admin/cargar-propiedades */
 const { aplicarCORS } = require('../../lib/cors');
 const { supabaseAdmin } = require('../../lib/supabaseClients');
-const { limpiarTexto, parsePrecioServidor, generarCodigo } = require('../../lib/adminHelpers');
+const { limpiarTexto, parsePrecioServidor, generarCodigo, parseGaleriaServidor } = require('../../lib/adminHelpers');
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
@@ -41,6 +41,7 @@ module.exports = async function handler(req, res) {
       const precio = parsePrecioServidor(row.precio);
       const habitaciones = parseInt(row.habitaciones, 10);
       const banos = parseInt(row.banos, 10);
+      const area = parseInt(row.area, 10);
 
       if (!titulo || !tipo || !ciudad || !precio) {
         erroresFila.push({
@@ -59,7 +60,12 @@ module.exports = async function handler(req, res) {
         precio,
         habitaciones: Number.isFinite(habitaciones) ? habitaciones : null,
         banos: Number.isFinite(banos) ? banos : null,
+        area: Number.isFinite(area) ? area : null,
+        barrio: limpiarTexto(row.barrio) || null,
+        descripcion: limpiarTexto(row.descripcion) || null,
+        parqueadero: limpiarTexto(row.parqueadero) || null,
         imagen: limpiarTexto(row.url_imagen) || null,
+        imagenes: parseGaleriaServidor(row.galeria),
         link_whatsapp: limpiarTexto(row.link_whatsapp) || null,
         activo: true,
         vendido: false,
