@@ -5633,16 +5633,12 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
           ],
           '¿Qué tipo de inmueble estás buscando?'
         );
-      } else if(val === 'asesoria'){
-        sfAddMsg('b', 'Con gusto agendo tu asesoría personalizada. Escríbenos por WhatsApp y un asesor te contactará de inmediato:<br><br><a href="https://wa.me/573206922370" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;font-weight:700;font-size:.8rem;padding:.55rem .9rem;border-radius:10px;text-decoration:none;">💬 Agendar por WhatsApp</a>');
+      } else if(val === 'asesoria') {
+        sfAddMsg('b', 'Con gusto agendo tu asesoría personalizada. Escríbenos por WhatsApp y un asesor te contactará de inmediato:<br><br><a href="https://wa.me/573206922370" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;font-weight:700;font-size:.8rem;padding:.55rem .9rem;border-radius:10px;text-decoration:none;">💬 Agendar por WhatsApp</a>' + sfBotonNuevaBusqueda());
         sfSpeak('Con gusto agendo tu asesoría. Escríbenos por WhatsApp y un asesor te contactará de inmediato.');
         sfStep = 0;
-      } else if(val === 'credito'){
-        sfAddMsg('b', 'Te acompañamos en todo el proceso de crédito hipotecario con los principales bancos del país. Para iniciar, comunícate con nuestros asesores:<br><br><a href="https://wa.me/573206922370" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;font-weight:700;font-size:.8rem;padding:.55rem .9rem;border-radius:10px;text-decoration:none;">💬 Consultar crédito</a>');
-        sfSpeak('Te acompañamos en todo el proceso de crédito hipotecario. Nuestros asesores están disponibles por WhatsApp.');
-        sfStep = 0;
-      } else if(val === 'invertir'){
-        sfAddMsg('b', 'Invertir en finca raíz en Pereira y Dosquebradas es una de las mejores decisiones con valorización sostenida. Nuestros asesores te presentan las mejores oportunidades:<br><br><a href="https://wa.me/573206922370" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;font-weight:700;font-size:.8rem;padding:.55rem .9rem;border-radius:10px;text-decoration:none;">💬 Ver oportunidades</a>');
+      } else if(val === 'invertir') {
+        sfAddMsg('b', 'Invertir en finca raíz en Pereira y Dosquebradas es una de las mejores decisiones con valorización sostenida. Nuestros asesores te presentan las mejores oportunidades:<br><br><a href="https://wa.me/573206922370" target="_blank" style="display:inline-flex;align-items:center;gap:.4rem;background:#25D366;color:#fff;font-weight:700;font-size:.8rem;padding:.55rem .9rem;border-radius:10px;text-decoration:none;">💬 Ver oportunidades</a>' + sfBotonNuevaBusqueda());
         sfSpeak('Invertir en finca raíz en el Eje Cafetero es una excelente decisión. Escríbenos para presentarte las mejores oportunidades.');
         sfStep = 0;
       }
@@ -5765,6 +5761,12 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
     return html;
   }
 
+  /* Botón suelto de "Nueva búsqueda", para usarlo en CUALQUIER respuesta
+     del chat (no solo en resultados de propiedades) */
+  function sfBotonNuevaBusqueda(){
+    return '<div style="margin-top:.6rem;"><button onclick="sfReiniciar()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:10px;padding:.5rem .8rem;font-size:.78rem;cursor:pointer;">🔄 Nueva búsqueda</button></div>';
+  }
+
   function sfBotWhatsApp(){
     return '<div style="margin-top:.75rem">'
       + '<div style="font-size:.78rem;color:rgba(255,255,255,.6);margin-bottom:.4rem;">¿Deseas agendar una visita o hablar con un asesor?</div>'
@@ -5777,6 +5779,20 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
      del botón "Ver detalles" (atributo data-ficha) para no tener que
      volver a pedirle nada al backend. Aquí solo se decodifica y se
      muestra como un nuevo mensaje de Sofía en el chat. */
+  /* Botón "Agendar visita" dentro de la ficha del chat: abre el MISMO
+     modal (Datos → Fecha → Hora → Confirmar) que usan las propiedades
+     del carrusel principal, reutilizando openModal() e id de Supabase.
+     Si la propiedad no está en PROPS (carrusel principal) por algún
+     motivo, cae de vuelta al link de WhatsApp como respaldo. */
+  window.sfAgendarDesdeChat = function(id, linkRespaldo){
+    var encontrada = (typeof PROPS !== 'undefined') && Array.isArray(PROPS) && PROPS.some(function(p){ return p.id === id; });
+    if(encontrada && typeof openModal === 'function'){
+      openModal(id);
+    } else if(linkRespaldo){
+      window.open(linkRespaldo, '_blank');
+    }
+  };
+
   window.sfVerFicha = function(btn){
     try{
       var b64 = btn.getAttribute('data-ficha');
@@ -5859,8 +5875,7 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
       [
         {val:'buscar',   label:'Buscar propiedad', icon:'🏠'},
         {val:'invertir', label:'Invertir',          icon:'📈'},
-        {val:'asesoria', label:'Agendar asesoría',  icon:'📅'},
-        {val:'credito',  label:'Crédito hipotecario',icon:'🏦'}
+        {val:'asesoria', label:'Agendar asesoría',  icon:'📅'}
       ],
       '¿En qué te puedo ayudar hoy?'
     );
