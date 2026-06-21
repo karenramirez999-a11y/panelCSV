@@ -5511,7 +5511,70 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
       d.innerHTML='<div class="sf-bub">'+html+'</div>';
     }
     box.appendChild(d); box.scrollTop=box.scrollHeight;
+    return d;
   }
+
+  /* ── Navegación del carrusel de propiedades (flechas + indicador) ──
+     Cada carrusel tiene un id único generado por el backend. Estas
+     funciones quedan en window porque se llaman desde onclick/onscroll
+     en HTML insertado dinámicamente (innerHTML), no desde closures. */
+  window.sfCarruselMover = function(id, direccion){
+    var track = document.getElementById(id + '-track');
+    if(!track) return;
+    var primeraTarjeta = track.querySelector(':scope > div');
+    var anchoTarjeta = primeraTarjeta ? primeraTarjeta.offsetWidth + 10 : 210; // +gap aprox.
+    var visibles = Math.max(1, Math.floor(track.clientWidth / anchoTarjeta));
+    track.scrollBy({ left: direccion * anchoTarjeta * visibles, behavior: 'smooth' });
+    // el scroll suave dispara 'scroll' varias veces; actualizamos también
+    // de inmediato para que las flechas no se vean "atrasadas".
+    setTimeout(function(){ sfCarruselActualizar(id); }, 350);
+  };
+
+  window.sfCarruselActualizar = function(id){
+    var track = document.getElementById(id + '-track');
+    var izq = document.getElementById(id + '-izq');
+    var der = document.getElementById(id + '-der');
+    var ind = document.getElementById(id + '-ind');
+    if(!track) return;
+
+    var maxScroll = track.scrollWidth - track.clientWidth;
+    var hayScroll = maxScroll > 4;
+    var enInicio = track.scrollLeft <= 4;
+    var enFinal = track.scrollLeft >= maxScroll - 4;
+
+    if(izq) izq.style.display = (hayScroll && !enInicio) ? 'flex' : 'none';
+    if(der) der.style.display = (hayScroll && !enFinal) ? 'flex' : 'none';
+    if(izq) izq.style.alignItems = 'center'; if(izq) izq.style.justifyContent = 'center';
+    if(der) der.style.alignItems = 'center'; if(der) der.style.justifyContent = 'center';
+
+    if(ind){
+      var total = track.children.length;
+      if(!hayScroll){
+        ind.textContent = total + (total === 1 ? ' propiedad' : ' propiedades');
+      } else {
+        var primeraTarjeta = track.querySelector(':scope > div');
+        var anchoTarjeta = primeraTarjeta ? primeraTarjeta.offsetWidth + 10 : 210;
+        var actual = Math.min(total, Math.round(track.scrollLeft / anchoTarjeta) + 1);
+        ind.textContent = actual + ' de ' + total + ' propiedades · desliza para ver más →';
+      }
+    }
+  };
+
+  /* Recorre el mensaje recién insertado y prepara cada carrusel que
+     traiga (flechas/indicador con su estado inicial correcto). */
+  function sfInicializarCarruseles(nodoMensaje){
+    if(!nodoMensaje || !nodoMensaje.querySelectorAll) return;
+    var tracks = nodoMensaje.querySelectorAll('.sf-carrusel-track');
+    tracks.forEach(function(t){
+      sfCarruselActualizar(t.id.replace(/-track$/, ''));
+    });
+  }
+
+  window.addEventListener('resize', function(){
+    document.querySelectorAll('.sf-carrusel-track').forEach(function(t){
+      sfCarruselActualizar(t.id.replace(/-track$/, ''));
+    });
+  });
 
   function sfTyping(on){
     var old=document.getElementById('sfTyp'); if(old) old.remove();
@@ -5710,6 +5773,24 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
       + '</div>';
   }
 
+  /* La ficha completa de cada propiedad viene embebida en base64 dentro
+     del botón "Ver detalles" (atributo data-ficha) para no tener que
+     volver a pedirle nada al backend. Aquí solo se decodifica y se
+     muestra como un nuevo mensaje de Sofía en el chat. */
+  window.sfVerFicha = function(btn){
+    try{
+      var b64 = btn.getAttribute('data-ficha');
+      var binario = atob(b64);
+      var bytes = new Uint8Array(binario.length);
+      for(var i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+      var html = new TextDecoder('utf-8').decode(bytes);
+      sfAddMsg('b', html);
+    }catch(e){
+      console.error('[Sofía] no se pudo mostrar la ficha de la propiedad:', e);
+      sfAddMsg('b', 'No pude cargar el detalle de esta propiedad. Intenta de nuevo o escríbenos por WhatsApp.');
+    }
+  };
+
   async function sfBuscar(){
     sfTyping(true); sfSta('Buscando propiedades...');
     try{
@@ -5729,12 +5810,13 @@ function acSlide(dir){var w=document.getElementById('acWrap');if(!w)return;var c
 
       if(data && data.ok && data.encontrado){
         /* El backend ya decide si fue match exacto o flexibilizado (nivel) */
-        var esExacto = data.nivel === 'flexible';
+        var esExacto = data.nivel === 'exacto';
         var intro = esExacto
           ? '🏡 Encontré <strong>'+data.total+'</strong> propiedad'+(data.total>1?'es':'')+' para ti:'
           : '🔍 No encontramos una coincidencia exacta, pero estas propiedades podrían interesarte:';
         sfAddMsg('b', intro);
-        sfAddMsg('b', data.html + sfBotWhatsApp());
+        var nodoResultados = sfAddMsg('b', data.html + sfBotWhatsApp());
+        sfInicializarCarruseles(nodoResultados);
         sfSpeak(esExacto
           ? 'Encontré '+data.total+' propiedad'+(data.total>1?'es':'')+'. Puedes verlas aquí o contactar a un asesor.'
           : 'No encontramos una coincidencia exacta, pero te muestro algunas propiedades similares que podrían interesarte.');
