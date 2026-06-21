@@ -4320,8 +4320,11 @@ function submitSm(){
 var MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 var DAYS_CAL=['D','L','M','X','J','V','S'];
 var TIMES_LIST=['8:00 AM','9:00 AM','10:00 AM','11:00 AM','2:00 PM','3:00 PM','4:00 PM','5:00 PM'];
-var BOOKED_SLOTS=[1,4];
+/* Endpoint real de agenda (Vercel). Cambia esto si el backend vive en otro dominio. */
+var CITAS_API_URL='/api/citas';
+var HORAS_OCUPADAS_HOY=[]; /* se llena al elegir una fecha, con la disponibilidad real */
 var cProp=null,cStep=1,selD=null,selT=null,calY,calM;
+
 
 function openModal(id){
   cProp=PROPS.find(function(p){return p.id===id;});
@@ -4387,15 +4390,26 @@ function renderCal(){
   }
   g.innerHTML=h;
 }
-function pickD(y,m,d){
+async function pickD(y,m,d){
   selD=new Date(y,m,d);renderCal();
-  var btn=document.getElementById('s2n');if(btn)btn.disabled=false;
+  var btn=document.getElementById('s2n');if(btn)btn.disabled=true;
+  try{
+    var fechaStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var r=await fetch(CITAS_API_URL+'/disponibilidad?fecha='+fechaStr);
+    var data=await r.json();
+    HORAS_OCUPADAS_HOY=(data&&data.ok&&Array.isArray(data.horasOcupadas))?data.horasOcupadas:[];
+  }catch(e){
+    /* Si falla la consulta no bloqueamos al usuario — el backend vuelve a
+       validar disponibilidad de todas formas al confirmar la visita. */
+    HORAS_OCUPADAS_HOY=[];
+  }
+  if(btn)btn.disabled=false;
 }
 function renderT(){
   var grid=document.getElementById('tGrid');
   if(!grid)return;
-  grid.innerHTML=TIMES_LIST.map(function(t,i){
-    var bk=BOOKED_SLOTS.includes(i),sel=selT===t;
+  grid.innerHTML=TIMES_LIST.map(function(t){
+    var bk=HORAS_OCUPADAS_HOY.includes(t),sel=selT===t;
     return '<div class="ts'+(bk?' bk':'')+(sel?' sel':'')+'"'+(bk?'':' onclick="pickT(\''+t+'\')"')+'>'+t+(bk?'<br><small style="font-size:.64rem">Ocupado</small>':'')+'</div>';
   }).join('');
 }
@@ -4419,14 +4433,69 @@ function renderConf(){
     ['🎯','Modalidad',aM?aM.value:'—']
   ].filter(function(r){return r;}).map(function(r){return '<div class="cr">'+r[0]+' '+r[1]+': <strong>'+r[2]+'</strong></div>';}).join('');
 }
-function submitA(){
-  document.querySelectorAll('.fs').forEach(function(s){s.style.display='none';});
-  document.querySelectorAll('.ag-steps').forEach(function(el){el.style.opacity='.25';});
-  var ds=selD?selD.toLocaleDateString('es-CO',{weekday:'long',month:'long',day:'numeric'}):'';
-  var sucBox=document.getElementById('sucBox');
-  var aT=document.getElementById('aT');var aM=document.getElementById('aM');
-  if(sucBox)sucBox.innerHTML='<div class="cr">📅 <strong>'+ds+' · '+selT+'</strong></div><div class="cr">🎯 <strong>'+(aM?aM.value:'')+'</strong></div><div class="cr">💬 Te contactaremos al <strong>'+(aT?aT.value:'número indicado')+'</strong></div>';
-  var suc=document.getElementById('sucSc');if(suc)suc.style.display='block';
+async function submitA(){
+  var btnConfirmar=document.querySelector('#fs4 .btn-nx');
+  if(btnConfirmar){btnConfirmar.disabled=true;btnConfirmar.textContent='Agendando...';}
+
+  var aN=document.getElementById('aN');
+  var aT=document.getElementById('aT');
+  var aM=document.getElementById('aM');
+
+  var nombre=aN?aN.value.trim():'';
+  var telefono=aT?aT.value.trim():'';
+  if(!nombre||!telefono){
+    alert('Por favor completa tu nombre y WhatsApp.');
+    if(btnConfirmar){btnConfirmar.disabled=false;btnConfirmar.textContent='✦ Confirmar visita';}
+    goS(1);
+    return;
+  }
+
+  var y=selD.getFullYear(),m=selD.getMonth(),d=selD.getDate();
+  var fechaStr=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+
+  var payload={
+    nombre:nombre,
+    telefono:telefono,
+    fecha:fechaStr,
+    hora:selT,
+    modalidad:aM?aM.value:'Presencial en la propiedad',
+    propiedad_id:cProp?cProp.id:null,
+    propiedad_titulo:cProp?cProp.name:null
+  };
+
+  try{
+    var r=await fetch(CITAS_API_URL+'/agendar',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    var data=await r.json();
+
+    if(!r.ok||!data.ok){
+      if(data.error==='ocupado'){
+        alert('😕 '+(data.mensaje||'Ese horario ya fue tomado. Por favor elige otro.'));
+        selT=null;
+        var s3n=document.getElementById('s3n');if(s3n)s3n.disabled=true;
+        await pickD(y,m,d); /* refresca disponibilidad real para ese día */
+        goS(3);
+      } else {
+        alert('No pudimos agendar tu visita: '+(data.error||'intenta de nuevo en un momento.'));
+      }
+      if(btnConfirmar){btnConfirmar.disabled=false;btnConfirmar.textContent='✦ Confirmar visita';}
+      return;
+    }
+
+    document.querySelectorAll('.fs').forEach(function(s){s.style.display='none';});
+    document.querySelectorAll('.ag-steps').forEach(function(el){el.style.opacity='.25';});
+    var ds=selD?selD.toLocaleDateString('es-CO',{weekday:'long',month:'long',day:'numeric'}):'';
+    var sucBox=document.getElementById('sucBox');
+    if(sucBox)sucBox.innerHTML='<div class="cr">📅 <strong>'+ds+' · '+selT+'</strong></div><div class="cr">🎯 <strong>'+(aM?aM.value:'')+'</strong></div><div class="cr">💬 Te contactaremos al <strong>'+(aT?aT.value:'número indicado')+'</strong></div>';
+    var suc=document.getElementById('sucSc');if(suc)suc.style.display='block';
+  }catch(err){
+    console.error('[Agendar visita]', err);
+    alert('No se pudo conectar con el servidor. Verifica tu conexión e intenta de nuevo.');
+    if(btnConfirmar){btnConfirmar.disabled=false;btnConfirmar.textContent='✦ Confirmar visita';}
+  }
 }
 
 /* ── PROPERTY DETAIL MODAL ── */
