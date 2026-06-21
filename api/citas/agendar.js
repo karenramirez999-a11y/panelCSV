@@ -4,6 +4,7 @@
 const { aplicarCORS } = require('../../lib/cors');
 const { supabaseAdmin } = require('../../lib/supabaseClients');
 const { limpiarTexto, esFechaValida, esHoraValida } = require('../../lib/citasHelpers');
+const { notificarNuevaVisita } = require('../../lib/notificaciones');
 
 module.exports = async function handler(req, res) {
   aplicarCORS(res, 'POST, OPTIONS');
@@ -124,6 +125,18 @@ module.exports = async function handler(req, res) {
       }
     } catch (errLead) {
       console.error('[citas/agendar] error inesperado creando lead automático:', errLead);
+    }
+
+    /* ── Avisos automáticos al administrador (correo + WhatsApp) ──
+       También "best effort": si Resend o Twilio fallan o no están
+       configurados, la visita ya quedó guardada arriba de todas formas. */
+    try {
+      await notificarNuevaVisita({
+        nombre, telefono, fecha, hora, modalidad,
+        propiedad_titulo: propiedadTitulo
+      });
+    } catch (errNotif) {
+      console.error('[citas/agendar] error inesperado en notificaciones automáticas:', errNotif);
     }
 
     return res.status(200).json({ ok: true, id: data.id, lead_id: leadId });
