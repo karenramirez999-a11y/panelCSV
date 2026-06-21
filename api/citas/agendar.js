@@ -80,7 +80,53 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ ok: false, error: 'No se pudo agendar la visita' });
     }
 
-    return res.status(200).json({ ok: true, id: data.id });
+    /* ── Crear (o reutilizar) un Lead automáticamente a partir de esta visita ──
+       Esto es "best effort": si falla, NUNCA debe tumbar la reserva de la
+       visita en sí — la cita ya quedó guardada arriba. */
+    let leadId = null;
+    try {
+      const { data: leadExistente } = await supabaseAdmin
+        .from('leads')
+        .select('id')
+        .eq('telefono', telefono)
+        .limit(1)
+        .maybeSingle();
+
+      if (leadExistente) {
+        leadId = leadExistente.id; // ya existe un lead con este teléfono: lo reutilizamos
+      } else {
+        const interes = propiedadTitulo
+          ? `Visita agendada: ${propiedadTitulo}`
+          : 'Visita agendada desde el sitio';
+
+        const { data: nuevoLead, error: errorLead } = await supabaseAdmin
+          .from('leads')
+          .insert([{
+            nombre,
+            telefono,
+            interes,
+            origen: 'visita_agendada',
+            estado: 'Nuevo',
+            notas: `Agendó visita el ${fecha} a las ${hora} (${modalidad}).`
+          }])
+          .select('id')
+          .single();
+
+        if (errorLead) {
+          console.error('[citas/agendar] no se pudo crear el lead automático:', errorLead.message);
+        } else {
+          leadId = nuevoLead.id;
+        }
+      }
+
+      if (leadId) {
+        await supabaseAdmin.from('citas').update({ lead_id: leadId }).eq('id', data.id);
+      }
+    } catch (errLead) {
+      console.error('[citas/agendar] error inesperado creando lead automático:', errLead);
+    }
+
+    return res.status(200).json({ ok: true, id: data.id, lead_id: leadId });
   } catch (err) {
     console.error('[citas/agendar]', err);
     return res.status(500).json({ ok: false, error: 'Error inesperado agendando la visita' });
