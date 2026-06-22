@@ -4,7 +4,8 @@
   "private": true,
   "description": "Funciones serverless de Vercel: chat flexible de Sofia y carga masiva de propiedades desde Excel",
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "googleapis": "^150.0.0"
   },
   "engines": {
     "node": ">=18.x"
