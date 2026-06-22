@@ -107,7 +107,9 @@ module.exports = async function handler(req, res) {
             telefono,
             interes,
             origen: 'visita_agendada',
-            estado: 'Nuevo',
+            // Sin "estado": dejamos que la columna use su valor por
+            // defecto en Supabase — así no chocamos con leads_estado_check
+            // sin tener que adivinar la palabra exacta que acepta.
             notas: `Agendó visita el ${fecha} a las ${hora} (${modalidad}).`
           }])
           .select('id')
