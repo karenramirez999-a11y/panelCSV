@@ -1,6 +1,6 @@
 const { google } = require('googleapis');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -13,5 +13,5 @@ export default async function handler(req, res) {
     scope: ['https://www.googleapis.com/auth/calendar']
   });
 
-  res.redirect(url);
-}
+  return res.redirect(url);
+};
