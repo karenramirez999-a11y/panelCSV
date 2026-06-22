@@ -133,13 +133,32 @@ module.exports = async function handler(req, res) {
        También "best effort": si Resend o Twilio fallan o no están
        configurados, la visita ya quedó guardada arriba de todas formas. */
     try {
-      await notificarNuevaVisita({
-        nombre, telefono, fecha, hora, modalidad,
-        propiedad_titulo: propiedadTitulo
-      });
-    } catch (errNotif) {
-      console.error('[citas/agendar] error inesperado en notificaciones automáticas:', errNotif);
-    }
+  await notificarNuevaVisita({
+    nombre,
+    telefono,
+    fecha,
+    hora,
+    modalidad,
+    propiedad_titulo: propiedadTitulo
+  });
+} catch (errNotif) {
+  console.error('[citas/agendar] error inesperado en notificaciones automáticas:', errNotif);
+}
+
+try {
+  await crearEventoCita({
+    nombre,
+    telefono,
+    fecha,
+    hora,
+    propiedad_titulo: propiedadTitulo
+  });
+} catch (errCalendar) {
+  console.error(
+    '[citas/agendar] error creando evento en Google Calendar:',
+    errCalendar
+  );
+}
 
     return res.status(200).json({ ok: true, id: data.id, lead_id: leadId });
   } catch (err) {
