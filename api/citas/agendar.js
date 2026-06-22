@@ -5,6 +5,7 @@ const { aplicarCORS } = require('../../lib/cors');
 const { supabaseAdmin } = require('../../lib/supabaseClients');
 const { limpiarTexto, esFechaValida, esHoraValida } = require('../../lib/citasHelpers');
 const { notificarNuevaVisita } = require('../../lib/notificaciones');
+const { crearEventoCita } = require('../../lib/googleCalendar');
 
 module.exports = async function handler(req, res) {
   aplicarCORS(res, 'POST, OPTIONS');
