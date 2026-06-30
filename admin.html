@@ -566,8 +566,8 @@ select.fi option{background:#FFF;color:var(--tx)}
             <select class="frsel" id="pFEst" onchange="renderProps()"><option value="">Todos estados</option><option value="activo">Activas</option><option value="vendido">Vendidas</option><option value="destacado">Destacadas</option></select>
           </div>
           <div class="tw"><table class="tbl">
-            <thead><tr><th>Propiedad</th><th>Ciudad</th><th>Precio</th><th>Tipo</th><th>Estado</th><th>Fotos</th><th>Acciones</th></tr></thead>
-            <tbody id="propsTbl"><tr><td colspan="7"><div class="loader"><div class="spin"></div>Cargando...</div></td></tr></tbody>
+            <thead><tr><th>Propiedad</th><th>Ciudad</th><th>Precio</th><th>Renta Mensual</th><th>Tipo</th><th>Estado</th><th>Fotos</th><th>Acciones</th></tr></thead>
+            <tbody id="propsTbl"><tr><td colspan="8"><div class="loader"><div class="spin"></div>Cargando...</div></td></tr></tbody>
           </table></div>
         </div>
 
@@ -1003,13 +1003,14 @@ function renderProps(){
     if(p.destacado&&!p.vendido)est+=' <span class="b by">★ Top</span>';
     return '<tr><td><div style="display:flex;align-items:center;gap:.6rem">'+(ri>0?'<img src="'+imgs.filter(function(u){return u.startsWith('http');})[0]+'" style="width:34px;height:28px;object-fit:cover;border-radius:5px;flex-shrink:0" onerror="this.style.display=\'none\'">':'<div style="width:34px;height:28px;background:var(--s3);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.75rem">🏠</div>')+'<span class="tn">'+esc(p.titulo||'')+'</span></div></td>'
       +'<td>'+esc(p.ciudad||'–')+'</td><td>'+fmtP(p.precio)+'</td>'
+      +'<td>'+(p.rentabilidad_mensual?'<span style="color:var(--gn);font-weight:600">'+fmtP(p.rentabilidad_mensual)+'</span>':'<span style="color:var(--t3)">–</span>')+'</td>'
       +'<td><span class="b bb">'+esc(p.tipo||'')+'</span></td>'
       +'<td>'+est+'</td>'
       +'<td><span style="font-size:.75rem;color:var(--t3)">'+ri+' foto'+(ri!==1?'s':'')+'</span></td>'
       +'<td><div class="ta"><button class="tbtn e" onclick="openPropModal('+p.id+')" title="Editar">✏️</button>'
       +(p.vendido?'<button class="tbtn v" onclick="toggleSold('+p.id+',false)" title="Reactivar">🔄</button>':'<button class="tbtn" style="background:var(--gnd);color:#86efac" onclick="toggleSold('+p.id+',true)" title="Marcar vendida">✅</button>')
       +'<button class="tbtn d" onclick="delProp('+p.id+',\''+esc(p.titulo||'')+'\')">🗑️</button></div></td></tr>';
-  }).join(''):'<tr><td colspan="7"><div class="es"><div class="es-ico">🔍</div><div class="es-txt">Sin resultados</div></div></td></tr>');
+  }).join(''):'<tr><td colspan="8"><div class="es"><div class="es-ico">🔍</div><div class="es-txt">Sin resultados</div></div></td></tr>');
 }
 
 async function toggleSold(id,sold){
@@ -1068,6 +1069,7 @@ function openPropModal(id){
     +'<div class="fg"><label class="fl">Precio COP *</label><input class="fi" id="pPre" type="number" min="0" value="'+vv('precio')+'" placeholder="380000000"></div>'
     +'<div class="fg"><label class="fl">Negociación</label><select class="fi" id="pNeg"><option value="">–</option>'
     +['Precio fijo','Precio negociable','Acepta permuta'].map(function(n){return'<option'+(sel('negociacion',n))+'>'+n+'</option>';}).join('')+'</select></div>'
+    +'<div class="fg"><label class="fl">Renta Mensual COP</label><input class="fi" id="pRent" type="number" min="0" value="'+vv('rentabilidad_mensual')+'" placeholder="2500000"></div>'
     +'</div>'
     +'<div class="fsep">✦ Características</div>'
     +'<div class="tggrp" id="pFeats" style="margin-bottom:.85rem">'+FEATS.map(function(f){return'<div class="tg'+(feats.includes(f)?' on':'')+'" onclick="this.classList.toggle(\'on\')">'+f+'</div>';}).join('')+'</div>'
@@ -1128,7 +1130,7 @@ async function saveProp(){
     }
     if(upEl)upEl.style.display='none';
   }
-  var payload={titulo:titulo,ciudad:V('pCiu'),barrio:V('pBar')||null,tipo:V('pTip'),estrato:V('pEst')||null,habitaciones:parseInt(V('pHab'))||0,banos:parseInt(V('pBan'))||1,area:parseInt(V('pAre'))||null,antiguedad:V('pAnt')||null,parqueadero:V('pPar')||null,precio:parseFloat(V('pPre'))||null,negociacion:V('pNeg')||null,descripcion:V('pDes')||null,seo_titulo:V('pSeoT')||null,seo_desc:V('pSeoD')||null,caracteristicas:JSON.stringify(feats),imagen:urls[0]||null,imagenes:JSON.stringify(urls),activo:chk('pAct'),destacado:chk('pDst'),permuta:chk('pPrm')};
+  var payload={titulo:titulo,ciudad:V('pCiu'),barrio:V('pBar')||null,tipo:V('pTip'),estrato:V('pEst')||null,habitaciones:parseInt(V('pHab'))||0,banos:parseInt(V('pBan'))||1,area:parseInt(V('pAre'))||null,antiguedad:V('pAnt')||null,parqueadero:V('pPar')||null,precio:parseFloat(V('pPre'))||null,negociacion:V('pNeg')||null,rentabilidad_mensual:parseFloat(V('pRent'))||null,descripcion:V('pDes')||null,seo_titulo:V('pSeoT')||null,seo_desc:V('pSeoD')||null,caracteristicas:JSON.stringify(feats),imagen:urls[0]||null,imagenes:JSON.stringify(urls),activo:chk('pAct'),destacado:chk('pDst'),permuta:chk('pPrm')};
   if(!sb){toast('warn','Demo','Sin Supabase real');closeM('propModal');btn.disabled=false;return;}
   var r=ST.editId?await sb.from('propiedades').update(payload).eq('id',ST.editId):await sb.from('propiedades').insert([payload]);
   btn.disabled=false;btn.textContent=ST.editId?'💾 Guardar cambios':'➕ Crear propiedad';
