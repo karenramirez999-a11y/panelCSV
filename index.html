@@ -539,6 +539,17 @@ section{padding:4rem 3rem}
   color: #718096;
   font-weight: 500;
 }
+.pc-rent {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1d9a5c;
+  margin-top: -0.8rem;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
 .pc-acts {
   display: flex;
   align-items: center;
@@ -3476,6 +3487,7 @@ nav.open .btn-nav{background:linear-gradient(135deg,var(--gold),var(--gold-light
         <div class="pd-price-box">
           <div class="pd-price" id="pdPrice"></div>
           <div class="pd-price-label">COP</div>
+          <div id="pdRent" style="display:none;margin-top:.4rem;font-size:.78rem;font-weight:600;color:#1d9a5c;white-space:nowrap"></div>
         </div>
       </div>
 
@@ -3828,12 +3840,12 @@ function filterProps(ciudad){
 /* ── FALLBACK PROPS ── */
 function useFallbackProps(){
   PROPS=[
-    {id:1,name:'Apto Pinares',tipo:'Apartamento',loc:'Pinares, Pereira',ciudad:'Pereira',price:'$380.000.000',beds:3,baths:2,area:85,perm:false,emoji:'🏢',bg:'ap',estrato:'Estrato 4',antiguedad:'5 años',parq:'1 parqueadero',piso:'Piso 8',desc:'Hermoso apartamento en el exclusivo sector de Pinares con acabados premium, cocina integral y vistas panorámicas.',feats:['🚗 Garaje','🔐 Conjunto cerrado','🛗 Ascensor','🌇 Vista panorámica'],gallery:['ap','ca','of','ap','ca']},
-    {id:2,name:'Casa El Poblado',tipo:'Casa',loc:'El Poblado, Pereira',ciudad:'Pereira',price:'$650.000.000',beds:4,baths:3,area:180,perm:true,emoji:'🏡',bg:'ca',estrato:'Estrato 5',antiguedad:'8 años',parq:'2 parqueaderos',piso:'Casa independiente',desc:'Amplia casa en conjunto residencial cerrado con jardín privado y estudio.',feats:['🚗 Garaje doble','🌿 Jardín privado','🔐 Conjunto cerrado','⚡ Planta eléctrica'],gallery:['ca','ap','of','ca','ap']},
-    {id:3,name:'Apto Dosquebradas',tipo:'Apartamento',loc:'Centro, Dosquebradas',ciudad:'Dosquebradas',price:'$220.000.000',beds:2,baths:1,area:55,perm:false,emoji:'🏗️',bg:'ap',estrato:'Estrato 3',antiguedad:'3 años',parq:'1 parqueadero',piso:'Piso 5',desc:'Apartamento moderno con balcón cerca de centros comerciales.',feats:['🚗 Parqueadero','🛗 Ascensor','🔆 Balcón'],gallery:['ap','of','ca','ap','of']},
-    {id:4,name:'Casa Cerritos',tipo:'Casa',loc:'Cerritos, Pereira',ciudad:'Pereira',price:'$890.000.000',beds:5,baths:4,area:280,perm:true,emoji:'🌿',bg:'ca',estrato:'Estrato 6',antiguedad:'10 años',parq:'3 parqueaderos',piso:'Casa independiente',desc:'Lujosa casa campestre en Cerritos con piscina privada y jardín.',feats:['🚗 Triple garaje','🏊 Piscina privada','🌿 Jardín amplio','🔆 Terraza BBQ'],gallery:['ca','ap','of','ca','ap']},
-    {id:5,name:'Oficina Álamos',tipo:'Oficina',loc:'Álamos, Pereira',ciudad:'Pereira',price:'$310.000.000',beds:0,baths:2,area:65,perm:false,emoji:'🏢',bg:'of',estrato:'Estrato 4',antiguedad:'2 años',parq:'2 parqueaderos',piso:'Piso 3',desc:'Moderna oficina en edificio corporativo con sala de juntas.',feats:['🚗 2 Parqueaderos','🛗 Ascensor','🌇 Vista ciudad'],gallery:['of','ap','ca','of','ap']},
-    {id:6,name:'Finca Termales',tipo:'Finca',loc:'Vereda Termales, Santa Rosa',ciudad:'Santa Rosa de Cabal',price:'$750.000.000',beds:4,baths:3,area:320,perm:true,emoji:'🌿',bg:'ca',estrato:'Rural',antiguedad:'15 años',parq:'Amplio',piso:'Casa 1 piso',desc:'Espectacular finca en Vereda Termales rodeada de naturaleza.',feats:['🌿 Jardín extenso','🏊 Zona piscina','🌾 Cultivos','🏔️ Vista montañas'],gallery:['ca','of','ap','ca','of']},
+    {id:1,name:'Apto Pinares',tipo:'Apartamento',loc:'Pinares, Pereira',ciudad:'Pereira',price:'$380.000.000',rentabilidad:'$2.800.000',beds:3,baths:2,area:85,perm:false,emoji:'🏢',bg:'ap',estrato:'Estrato 4',antiguedad:'5 años',parq:'1 parqueadero',piso:'Piso 8',desc:'Hermoso apartamento en el exclusivo sector de Pinares con acabados premium, cocina integral y vistas panorámicas.',feats:['🚗 Garaje','🔐 Conjunto cerrado','🛗 Ascensor','🌇 Vista panorámica'],gallery:['ap','ca','of','ap','ca']},
+    {id:2,name:'Casa El Poblado',tipo:'Casa',loc:'El Poblado, Pereira',ciudad:'Pereira',price:'$650.000.000',rentabilidad:'$4.500.000',beds:4,baths:3,area:180,perm:true,emoji:'🏡',bg:'ca',estrato:'Estrato 5',antiguedad:'8 años',parq:'2 parqueaderos',piso:'Casa independiente',desc:'Amplia casa en conjunto residencial cerrado con jardín privado y estudio.',feats:['🚗 Garaje doble','🌿 Jardín privado','🔐 Conjunto cerrado','⚡ Planta eléctrica'],gallery:['ca','ap','of','ca','ap']},
+    {id:3,name:'Apto Dosquebradas',tipo:'Apartamento',loc:'Centro, Dosquebradas',ciudad:'Dosquebradas',price:'$220.000.000',rentabilidad:'$1.600.000',beds:2,baths:1,area:55,perm:false,emoji:'🏗️',bg:'ap',estrato:'Estrato 3',antiguedad:'3 años',parq:'1 parqueadero',piso:'Piso 5',desc:'Apartamento moderno con balcón cerca de centros comerciales.',feats:['🚗 Parqueadero','🛗 Ascensor','🔆 Balcón'],gallery:['ap','of','ca','ap','of']},
+    {id:4,name:'Casa Cerritos',tipo:'Casa',loc:'Cerritos, Pereira',ciudad:'Pereira',price:'$890.000.000',rentabilidad:'$6.200.000',beds:5,baths:4,area:280,perm:true,emoji:'🌿',bg:'ca',estrato:'Estrato 6',antiguedad:'10 años',parq:'3 parqueaderos',piso:'Casa independiente',desc:'Lujosa casa campestre en Cerritos con piscina privada y jardín.',feats:['🚗 Triple garaje','🏊 Piscina privada','🌿 Jardín amplio','🔆 Terraza BBQ'],gallery:['ca','ap','of','ca','ap']},
+    {id:5,name:'Oficina Álamos',tipo:'Oficina',loc:'Álamos, Pereira',ciudad:'Pereira',price:'$310.000.000',rentabilidad:'$2.200.000',beds:0,baths:2,area:65,perm:false,emoji:'🏢',bg:'of',estrato:'Estrato 4',antiguedad:'2 años',parq:'2 parqueaderos',piso:'Piso 3',desc:'Moderna oficina en edificio corporativo con sala de juntas.',feats:['🚗 2 Parqueaderos','🛗 Ascensor','🌇 Vista ciudad'],gallery:['of','ap','ca','of','ap']},
+    {id:6,name:'Finca Termales',tipo:'Finca',loc:'Vereda Termales, Santa Rosa',ciudad:'Santa Rosa de Cabal',price:'$750.000.000',rentabilidad:'$5.000.000',beds:4,baths:3,area:320,perm:true,emoji:'🌿',bg:'ca',estrato:'Rural',antiguedad:'15 años',parq:'Amplio',piso:'Casa 1 piso',desc:'Espectacular finca en Vereda Termales rodeada de naturaleza.',feats:['🌿 Jardín extenso','🏊 Zona piscina','🌾 Cultivos','🏔️ Vista montañas'],gallery:['ca','of','ap','ca','of']},
   ];
 }
 
@@ -3880,6 +3892,7 @@ function buildCardHtml(p, animated){
   h += '<div class="pc-spec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spec-svg"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="M3 9h6M3 15h6M9 21v-6M15 21v-6M21 15h-6M21 9h-6M15 3v6M9 3v6"></path></svg> <span>' + p.area + 'm²</span></div>';
   h += '</div>';
   h += '<div class="pc-price">' + p.price + ' <small>COP</small></div>';
+  h += (p.rentabilidad ? '<div class="pc-rent">💰 Renta Mensual: ' + p.rentabilidad + '</div>' : '');
   h += '<div class="pc-acts">';
   h += '<button class="btn-pc-ver" onclick="event.stopPropagation();openPropDetail(' + p.id + ')">Detalles</button>';
   h += '<button class="btn-pc-agendar" onclick="event.stopPropagation();openModal(' + p.id + ')">Agendar</button>';
@@ -4160,6 +4173,8 @@ function mapProp(row){
   var bg=bgMap[tipo]||'ap';
   var priceNum=parseFloat(row.precio)||0;
   var priceFmt=priceNum>0?'$'+priceNum.toLocaleString('es-CO'):(row.precio||'Consultar');
+  var rentNum=parseFloat(row.rentabilidad_mensual)||0;
+  var rentFmt=rentNum>0?'$'+rentNum.toLocaleString('es-CO'):'';
   var feats=[];
   try{feats=JSON.parse(row.caracteristicas||'[]');}catch(e){}
   var gallery=[bg,bg,bg,bg,bg];
@@ -4177,7 +4192,7 @@ function mapProp(row){
   return{
     id:row.id,name:row.titulo||'Sin título',tipo:tipo,
     loc:(row.barrio?row.barrio+', ':'')+( row.ciudad||''),
-    ciudad:row.ciudad||'',price:priceFmt,
+    ciudad:row.ciudad||'',price:priceFmt,rentabilidad:rentFmt,
     beds:parseInt(row.habitaciones)||0,baths:parseInt(row.banos)||1,
     area:parseInt(row.area)||0,perm:row.permuta||false,
     emoji:emojiMap[tipo]||'🏠',bg:bg,desc:row.descripcion||'',
@@ -4603,6 +4618,11 @@ function openPropDetail(id){
   var pdName=document.getElementById('pdName');if(pdName)pdName.textContent=p.name;
   var pdLoc=document.getElementById('pdLoc');if(pdLoc)pdLoc.innerHTML='📍 '+p.loc;
   var pdPrice=document.getElementById('pdPrice');if(pdPrice)pdPrice.textContent=p.price;
+  var pdRent=document.getElementById('pdRent');
+  if(pdRent){
+    if(p.rentabilidad){pdRent.textContent='💰 Renta Mensual: '+p.rentabilidad;pdRent.style.display='block';}
+    else{pdRent.style.display='none';}
+  }
   var specs=[];
   if(p.beds>0)specs.push('🛏 '+p.beds+' hab.');
   specs.push('🚿 '+p.baths+' baños');
