@@ -1928,7 +1928,7 @@ function confirm_(ico,h,p,cb,btnCls,btnTxt){
   ST.cfCb=cb;openM('cfOv');
 }
 function closeCf(){closeM('cfOv');ST.cfCb=null;}
-ID('cfOk').addEventListener('click',function(){closeCf();if(ST.cfCb)ST.cfCb();});
+ID('cfOk').addEventListener('click',function(){var cb=ST.cfCb;closeCf();if(cb)cb();});
 </script>
 </body>
 </html>
